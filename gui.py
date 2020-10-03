@@ -1,4 +1,6 @@
 import tkinter as tk
+import tweepy
+from mybot import api
 
 window = tk.Tk()
 label = tk.Label(window, text="hello")
@@ -33,6 +35,7 @@ class Gui:
            
 
 def main():
+    api.update_status("hi")
     my_window = Gui(window)
     window.mainloop()
 
