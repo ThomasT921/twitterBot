@@ -1,99 +1,76 @@
 import tkinter as tk
 import tweepy
 import threading
-from mybot import api
+from functools import partial
+from mybot import continuousRun, setStatus
 
 window = tk.Tk()
-label = tk.Label(window, text="hello")
-
-timeline = api.mentions_timeline()
-for mention in timeline:
-    print(str(mention.in_reply_to_user_id) + "--" + str(mention.id) + "--" + str(mention.text) + "--" + str(mention.user.id))
-    #         this is me ^                              status id^               status text^               who sent the status^
-    #print(mention.__dict__.values())
-    print(mention.retweeted)
-#for mention in timeline:
-        #print(str(mention.in_reply_to_user_id) + "--" + str(mention.id) + "--" + str(mention.text))
-
-#sets the status that is default or user inputs
-def setStatus(text):
-    #needs to have an if statement
-    # if defualt
-    # api.update --- defualt status 
-    # if user input
-    # add validation to make sure they enter something
-    # api.update -textinput
-    # add validation making sure they wnat to tweet it with the tweet in the message.
-    api.update_status(text) #text is the text of the tweet
-    pass
-
-def retweetStatus(me):
-    timeline = api.mentions_timeline()
-    followersList = api.followers_ids(me)
-    for mention in timeline:
-        user = mention.user.id
-        status = mention.id
-        for follower in followersList:
-            if user == follower and mention.retweeted == False:
-                api.retweet(status)
-                if mention.favorited == False:
-                    likeStatus(status)
-
-def likeStatus(statusId):
-    api.create_favorite(statusId)
-
-#msg those who follow the account
-def directMsg(me):
-    followersList = api.followers_ids(me) 
-    for follower in followersList:
-        friendships = api.show_friendship(source_id = me, target_id = follower)
-        print(friendships)
-        for friendship in friendships:
-            if friendship.following == False:
-                api.create_friendship(follower)
-                api.send_direct_message(follower, "If you would like to have your tweets retweeted please follow the twitter @SupportStream_" + 
-                " and use @SupportStream_ in your tweets.")
+#label = tk.Label(window, text="hello")
 
 
-def retweeterRun():
-    me = api.me().__dict__.get("id")
-    retweetThread = threading.Timer(10.0, retweeterRun)
-    retweetThread.daemon = True
-    retweetThread.start()
-    retweetStatus(me)
-    directMsg(me)
-    print("running")
-    
 class Gui:
     def __init__(self, master):
         self.__master = master
-        self.__setSize()
-        self.__close_button()
-        self.__create_label("Tweet:")
+        self.__create_window(master)
 
+    def __create_window(self, master):
+        self.__setSize()
+        self.__close_button(master)
+        self.__create_label("Tweet:")
+        status = self.__create_TextBox()
+        self.__send_button(status)
+
+    def __confirmWindow(self, status):
+        self.__newWindow = tk.Toplevel()
+        self.__newWindow.minsize(290,300)
+        self.__newWindow.title("Confirm")
+        self.__createConfirmMsg(self.__newWindow, status)
+        self.__sendConfirm(self.__newWindow, status)
+
+    def __createConfirmMsg(self, window, status):
+        self.__msg = tk.Message(self.__newWindow, anchor = "center", width = 200, pady = 20,
+         text = "Are you sure you would like to tweet: \n\n" + status + ".")
+        self.__msg.pack()
+
+    def __sendConfirm(self, window, status):
+        self.send_button = tk.Button(window, text="Confirm", command = partial(self.__close, window, status))
+        self.send_button.pack()
+        
     def __setSize(self):
         self.__master.minsize(1000,500)
 
-    def __close_button(self):
-        self.close_button = tk.Button(window, text="Close Button", command = self.__close)
+    def __close_button(self, window):
+        status = ""
+        self.close_button = tk.Button(window, text="Close Button", command = partial(self.__close, window, status))
         self.close_button.pack()
     
-    def __send_button(self):
-        self.send_button = tk.Button(window, text="Send") #command = send #function for sending a tweet
+    def __send_button(self, status):
+        self.send_button = tk.Button(window, text="Send Tweet", command = partial(self.__sendClick, status)) #command = send #function for sending a tweet
         self.send_button.pack()
+
+    def __sendClick(self, status):
+        status = status.get()
+        self.__confirmWindow(status)
     
     def __create_label(self, text):
         self.label = tk.Label(window, text=text)
         self.label.pack()
 
-    def __close(self):
-        self.__master.destroy()    
+    def __create_TextBox(self):
+        self.e = tk.Entry()
+        self.e.pack()
+        return self.e
+
+    def __close(self, window, status):
+        window.destroy()
+        if str(window) == ".!toplevel":
+            setStatus(status)
+               
 
 def main():
-    me = api.me().__dict__.get("id")
     Gui(window)
-    directMsg()
-    #retweeterRun()
-    #window.mainloop() 
+    
+    #continuousRun()
+    window.mainloop() 
     
 main()
