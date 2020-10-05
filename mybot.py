@@ -74,16 +74,22 @@ def continuousRun():
     followers = []
     following = []
     timeline = []
-    #timeline
+    #mentions in timeline
     mentions = tweepy.Cursor(api.mentions_timeline).items()
     while True:
         try:
+            #iterates through the mentions
             mention = next(mentions)
+            #adds them to the timeline list
             timeline.append(mention)
+        #if api rate limit exceeds
         except tweepy.TweepError:
+            #wait 15 min
             time.sleep(60*15)
+            #start again
             mention = next(mentions)
             timeline.append(mention)
+        #at the end of mentions
         except StopIteration:
             break
     #item iteration 
