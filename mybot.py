@@ -7,96 +7,140 @@ auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 
 api = tweepy.API(auth, wait_on_rate_limit = True, wait_on_rate_limit_notify = True)
-me = api.me().__dict__.get("id")
-data = api.rate_limit_status()
-print (data['resources']['followers'])
 
-friend = api.show_friendship(source_id = me, target_id = "1312457044784566276")
-print (friend)
-#sets the status that is default or user inputs
+#sets the status that is user input
 def setStatus(status):
+    #if the status is more than one character
     if len(status) > 1:
         api.update_status(status)
     else:
+        #if its blank
         print("Did not send, Please enter a status.")
 
+#unfollows people who unfollow the account
 def unfollow(me, followersList, followingList):
+    #goes through following
     for following in followingList:
+        #if the account follows and they don't follow
         if following not in followersList:
+            #unfollow
             api.destroy_friendship(following)
         
-
+#retweets & follow if they tag the account
 def retweetStatus(me, timeline, followersList):
+    #goes through timeline
     for mention in timeline:
+        #gets info
         user = mention.user.id
         status = mention.id
+        #make sure they follow the account
         for follower in followersList:
+            #if they are
             if user == follower and mention.retweeted == False:
+                #retweet
                 api.retweet(status)
+                #if not liked
                 if mention.favorited == False:
+                    #calls the like function
                     likeStatus(status)
-
+#like function
 def likeStatus(statusId):
+    #likes the status
     api.create_favorite(statusId)
 
 #msg those who follow the account
 def directMsg(me, followersList):
+    #creates a list of friends -- follow each other
     friendships = []
+    #goes through follower list
     for follower in followersList:
+        #rate limit management
         while True:
             try:
+                #checks friendship of follower
                 friendship = api.show_friendship(source_id = me, target_id = follower)
+                #adds tuple to the list
                 friendships.append(friendship)
+            #when we hit rate limit
             except tweepy.TweepError:
+                #wait 15 min
                 time.sleep(60*15)
+                #cont
                 friendship = api.show_friendship(source_id = me, target_id = follower)
                 friendships.append(friendship)
+            #at the end of the list
             except StopIteration:
                 break
-    print(friendships)
+    #goes through friendships
     for friendship in friendships:
+        #if the account isn't following
         if friendship.following == False:
+            #follows
             api.create_friendship(follower)
+            #sends a dm
             dm = api.send_direct_message(follower, "If you would like to have your tweets retweeted please follow the twitter @SupportStream_" + 
             " and use @SupportStream_ in your tweets.")
 
-
+#a background thread to run while main is running
 def continuousRun():
+    #the accounts id
     me = api.me().__dict__.get("id")
-    retweetThread = threading.Timer(950.0, continuousRun)
+    #runs every 15 min
+    retweetThread = threading.Timer(900.0, continuousRun)
+    #stops when the main thread stops
     retweetThread.daemon = True
+    #starts the thread
     retweetThread.start()
+    #list of followers and following
     followers = []
     following = []
+    #timeline
     timeline = api.mentions_timeline(me)
-
+    #item iteration 
     followersCheck = tweepy.Cursor(api.followers, id = me).items()
-
+    #rate limiter check
     while True:
         try:
+            #iterates through followerscheck
             follower = next(followersCheck)
+            #adds it to the list
             followers.append(follower.id)
+            #if limit is hit
         except tweepy.TweepError:
+            #wait 15 min
             time.sleep(60*15)
+            #repeat
             follower = next(followersCheck)
             followers.append(follower.id)
+            #at the end of iteration
         except StopIteration:
             break
-    print(followers)
 
+    #item iteration
     friendsCheck = tweepy.Cursor(api.friends, id = me).items()
+    #rate limiter check
     while True:
         try:
+            #iterates through friendscheck
             friends = next(friendsCheck)
+            #adds it to the list
             following.append(friends.id)
+            #if limit is hit
         except tweepy.TweepError:
+            #wait 15 min
             time.sleep(60*15)
+            #repeat
             friends = next(friendsCheck)
             following.append(friends.id)
+            #at the end of iteration
         except StopIteration:
             break
-    print(following)
+    
+    #calls retweet func
     retweetStatus(me, timeline, followers)
+    #calls dm func
     directMsg(me, followers)
+    #calls unfollow func
     unfollow(me, followers, following)
+    #everytime it runs its just prints running
     print("running")
