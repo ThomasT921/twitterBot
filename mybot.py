@@ -5,37 +5,27 @@ from config import *
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
 
-api = tweepy.API(auth, wait_on_rate_limit=True)
+api = tweepy.API(auth, wait_on_rate_limit = True, wait_on_rate_limit_notify = True)
+me = api.me().__dict__.get("id")
+followersList = api.followers_ids(me)
+followingList = api.friends_ids(me)
+timeline = api.mentions_timeline()
 
-#timeline = api.mentions_timeline()
-#for mention in timeline:
-    #print(str(mention.in_reply_to_user_id) + "--" + str(mention.id) + "--" + str(mention.text) + "--" + str(mention.user.id))
-    #         this is me ^                              status id^               status text^               who sent the status^
-    #print(mention.__dict__.values())
 
 #sets the status that is default or user inputs
 def setStatus(status):
-    #needs to have an if statement
-    # if defualt
-    # api.update --- defualt status 
-    # if user input
-    # add validation to make sure they enter something
-    # api.update -textinput
-    # add validation making sure they wnat to tweet it with the tweet in the message.
-    print("Worked") #text is the text of the tweet
-    pass
+    if len(status) > 1:
+        api.update_status(status)
+    else:
+        print("Did not send, Please enter a status.")
 
-def unfollow(me):
-    followersList = api.followers_ids(me)
-    followingList = api.friends_ids(me)
+def unfollow(me, followersList, followingList):
     for following in followingList:
         if following not in followersList:
             api.destroy_friendship(following)
         
 
-def retweetStatus(me):
-    timeline = api.mentions_timeline()
-    followersList = api.followers_ids(me)
+def retweetStatus(me, timeline, followersList):
     for mention in timeline:
         user = mention.user.id
         status = mention.id
@@ -49,11 +39,9 @@ def likeStatus(statusId):
     api.create_favorite(statusId)
 
 #msg those who follow the account
-def directMsg(me):
-    followersList = api.followers_ids(me) 
+def directMsg(me, followersList):
     for follower in followersList:
         friendships = api.show_friendship(source_id = me, target_id = follower)
-        print(friendships)
         for friendship in friendships:
             if friendship.following == False:
                 api.create_friendship(follower)
@@ -63,10 +51,10 @@ def directMsg(me):
 
 def continuousRun():
     me = api.me().__dict__.get("id")
-    retweetThread = threading.Timer(900.0, continuousRun)
+    retweetThread = threading.Timer(1200.0, continuousRun)
     retweetThread.daemon = True
     retweetThread.start()
-    retweetStatus(me)
-    directMsg(me)
-    unfollow(me)
+    retweetStatus(me, timeline, followersList)
+    directMsg(me, followersList)
+    unfollow(me, followersList, followingList)
     print("running")

@@ -15,14 +15,14 @@ class Gui:
 
     def __create_window(self, master):
         self.__setSize()
-        self.__close_button(master)
         self.__create_label("Tweet:")
         status = self.__create_TextBox()
         self.__send_button(status)
+        self.__close_button(master)
 
     def __confirmWindow(self, status):
         self.__newWindow = tk.Toplevel()
-        self.__newWindow.minsize(290,300)
+        self.__newWindow.minsize(290,150)
         self.__newWindow.title("Confirm")
         self.__createConfirmMsg(self.__newWindow, status)
         self.__sendConfirm(self.__newWindow, status)
@@ -37,27 +37,27 @@ class Gui:
         self.send_button.pack()
         
     def __setSize(self):
-        self.__master.minsize(1000,500)
+        self.__master.minsize(350,350)
 
     def __close_button(self, window):
         status = ""
         self.close_button = tk.Button(window, text="Close Button", command = partial(self.__close, window, status))
-        self.close_button.pack()
+        self.close_button.pack(pady = 0)
     
     def __send_button(self, status):
         self.send_button = tk.Button(window, text="Send Tweet", command = partial(self.__sendClick, status)) #command = send #function for sending a tweet
-        self.send_button.pack()
+        self.send_button.pack(pady = 20)
 
     def __sendClick(self, status):
-        status = status.get()
+        status = status.get(1.0, "end-1c")
         self.__confirmWindow(status)
     
     def __create_label(self, text):
         self.label = tk.Label(window, text=text)
-        self.label.pack()
+        self.label.pack(pady = 10)
 
     def __create_TextBox(self):
-        self.e = tk.Entry()
+        self.e = tk.Text(height = 10, width = 40)
         self.e.pack()
         return self.e
 
@@ -70,7 +70,7 @@ class Gui:
 def main():
     Gui(window)
     
-    #continuousRun()
+    continuousRun()
     window.mainloop() 
     
 main()
