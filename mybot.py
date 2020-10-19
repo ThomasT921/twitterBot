@@ -37,12 +37,13 @@ def retweetStatus(me, timeline, followersList):
         for follower in followersList:
             #if they are
             if user == follower and mention.retweeted == False:
-                #retweet
-                api.retweet(status)
-                #if not liked
-                if mention.favorited == False:
-                    #calls the like function
-                    likeStatus(status)
+                if mention.retweeted == False:
+                    #retweet
+                    api.retweet(status)
+                    #if not liked
+                    if mention.favorited == False:
+                        #calls the like function
+                        likeStatus(status)
 #like function
 def likeStatus(statusId):
     #likes the status
@@ -84,6 +85,7 @@ def continuousRun():
             timeline.append(mention)
         #if api rate limit exceeds
         except tweepy.TweepError:
+            print("Rate Limit Reached")
             #wait 15 min
             time.sleep(60*15)
             #start again
@@ -103,6 +105,7 @@ def continuousRun():
             followers.append(follower.id)
             #if limit is hit
         except tweepy.TweepError:
+            print("Rate Limit Reached")
             #wait 15 min
             time.sleep(60*15)
             #repeat
@@ -123,6 +126,7 @@ def continuousRun():
             following.append(friends.id)
             #if limit is hit
         except tweepy.TweepError:
+            print("Rate Limit Reached")
             #wait 15 min
             time.sleep(60*15)
             #repeat
